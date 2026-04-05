@@ -23,7 +23,7 @@ const (
 
 type App struct {
 	ctx     context.Context
-	rootDir string // binary'nin bulunduğu dizin
+	rootDir string
 }
 
 func NewApp() *App { return &App{} }
@@ -31,21 +31,16 @@ func NewApp() *App { return &App{} }
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// Binary'nin gerçek konumunu bul (dev ve production için)
 	exe, err := os.Executable()
 	if err != nil {
-		// fallback: çalışma dizini
 		a.rootDir, _ = os.Getwd()
 	} else {
-		// Symlink'leri çöz
 		exe, _ = filepath.EvalSymlinks(exe)
 		a.rootDir = filepath.Dir(exe)
 	}
 
-	// Wails dev modunda binary tmp dizininde olabilir,
-	// bu durumda proje kökünü bul
+	// Dev modunda binary tmp'de olabilir — scripts/ klasörünü yukarı çıkarak bul
 	if _, err := os.Stat(filepath.Join(a.rootDir, "scripts", "setup.sh")); err != nil {
-		// Yukarı çık, scripts/ klasörünü ara (dev modu)
 		for dir := a.rootDir; dir != "/"; dir = filepath.Dir(dir) {
 			if _, err := os.Stat(filepath.Join(dir, "scripts", "setup.sh")); err == nil {
 				a.rootDir = dir
@@ -55,6 +50,39 @@ func (a *App) startup(ctx context.Context) {
 	}
 
 	log.Printf("[ArchInit] rootDir: %s", a.rootDir)
+}
+
+// ── KDE Masaüstü Teması ───────────────────────────────────────
+
+// ApplyKDETheme KDE Plasma masaüstü stilini gerçek zamanlı uygular.
+// style: "windows" | "macos" | "kde"
+func (a *App) ApplyKDETheme(style string) error {
+	themeMap := map[string]string{
+		"windows": "org.kde.breeze.desktop",
+		"macos":   "com.github.vinceliuice.WhiteSur-dark",
+		"kde":     "org.kde.breezedark.desktop",
+	}
+
+	theme, ok := themeMap[strings.ToLower(style)]
+	if !ok {
+		return fmt.Errorf("bilinmeyen stil: %s", style)
+	}
+
+	// lookandfeeltool ile temayı uygula (KDE Plasma)
+	cmd := exec.Command("lookandfeeltool", "--apply", theme)
+	cmd.Env = append(os.Environ(),
+		"DISPLAY=:0",
+		"DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus",
+	)
+
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("[KDE] lookandfeeltool hata: %v — %s", err, string(out))
+		return fmt.Errorf("tema uygulanamadı: %w", err)
+	}
+
+	log.Printf("[KDE] Tema uygulandı: %s", theme)
+	return nil
 }
 
 // ── Rclone OAuth ──────────────────────────────────────────────
@@ -94,28 +122,23 @@ func (a *App) RcloneAuthorize(provider string) (string, error) {
 	go func() { _ = cmd.Wait() }()
 
 	if authURL == "" {
-		return "", fmt.Errorf("auth URL bulunamadı")
+		return "", fmt.Errorf("auth URL bulunamadı — rclone kurulu mu?")
 	}
 	return authURL, nil
 }
 
 // ── Setup Runner ──────────────────────────────────────────────
 
-// RunSetup kurulum betiğini arkaplanda başlatır.
-// Loglar setup:log eventi ile frontend'e akar.
-// Bitince setup:finished eventi gönderilir.
 func (a *App) RunSetup(profile, drivers, cloud string, apps []string, aur string) (string, error) {
 	if profile == "" {
 		return "", fmt.Errorf("profil seçimi zorunludur")
 	}
 
-	// setup.sh'ın absolute path'i
 	setupScript := filepath.Join(a.rootDir, "scripts", "setup.sh")
 	if _, err := os.Stat(setupScript); err != nil {
 		return "", fmt.Errorf("setup.sh bulunamadı: %s", setupScript)
 	}
 
-	// Argüman listesi
 	args := []string{setupScript, "--profile", profile}
 	if drivers == "true" || drivers == "1" {
 		args = append(args, "--drivers")
@@ -130,14 +153,10 @@ func (a *App) RunSetup(profile, drivers, cloud string, apps []string, aur string
 		args = append(args, "--apps", strings.Join(apps, ","))
 	}
 
-	// bash ile çalıştır, çalışma dizini proje kökü
 	cmd := exec.Command("bash", args...)
 	cmd.Dir = a.rootDir
-
-	// sudo için mevcut ortamı aktar (SUDO_ASKPASS vs.)
-	cmd.Env = append(os.Environ(),
-		"SUDO_ASKPASS=/bin/false", // interaktif sudo'yu engelle
-	)
+	// NOT: SUDO_ASKPASS kaldırıldı — yay kendi sudo'sunu halleder
+	cmd.Env = os.Environ()
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -153,9 +172,8 @@ func (a *App) RunSetup(profile, drivers, cloud string, apps []string, aur string
 	}
 
 	pid := cmd.Process.Pid
-	log.Printf("[ArchInit] Setup started PID=%d profile=%s", pid, profile)
+	log.Printf("[ArchInit] Setup PID=%d profile=%s", pid, profile)
 
-	// Logları frontend'e stream et (arkaplanda — UI bloklanmaz)
 	go a.streamLines(stdout, "out")
 	go a.streamLines(stderr, "err")
 	go a.watchProcess(cmd)
@@ -163,19 +181,15 @@ func (a *App) RunSetup(profile, drivers, cloud string, apps []string, aur string
 	return fmt.Sprintf("Kurulum başlatıldı (PID %d)", pid), nil
 }
 
-// streamLines pipe'tan satır satır okur, her satırı frontend'e gönderir.
 func (a *App) streamLines(pipe io.ReadCloser, source string) {
 	defer pipe.Close()
 	scanner := bufio.NewScanner(pipe)
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		// Log dosyası yolunu yakala
 		if strings.HasPrefix(line, "[ARCHINIT] Log:") {
 			logPath := strings.TrimSpace(strings.TrimPrefix(line, "[ARCHINIT] Log:"))
 			runtime.EventsEmit(a.ctx, "setup:logfile", logPath)
 		}
-
 		runtime.EventsEmit(a.ctx, EventSetupLog, map[string]string{
 			"source": source,
 			"line":   line,
@@ -183,7 +197,6 @@ func (a *App) streamLines(pipe io.ReadCloser, source string) {
 	}
 }
 
-// watchProcess kurulum bitince setup:finished eventi gönderir.
 func (a *App) watchProcess(cmd *exec.Cmd) {
 	err := cmd.Wait()
 	payload := map[string]any{

@@ -1,4 +1,6 @@
 import './css/style.css';
+// Wails generated bindings — window.go yerine bunları kullan
+import { ApplyKDETheme, RcloneAuthorize, RunSetup } from '../wailsjs/go/main/App.js';
 
 /* ═══════════════════════════════════════════════════
    STEP 1 — Profil seçimi (index.html)
@@ -17,20 +19,16 @@ document.getElementById('btn-next')?.addEventListener('click', () => {
   localStorage.setItem('driversEnabled',
     String(document.getElementById('google-toggle')?.checked ?? true));
 
-  // Özel profil → uygulama seçim modalını aç
   if (profile === 'ozel') {
     document.getElementById('modal-custom')?.classList.remove('hidden');
     return;
   }
-
   window.location.href = 'page1.html';
 });
 
-// Özel profil modal — uygulama toggle
+// Özel profil — uygulama toggle
 document.querySelectorAll('.app-toggle').forEach(btn => {
-  btn.addEventListener('click', () => {
-    btn.classList.toggle('selected');
-  });
+  btn.addEventListener('click', () => btn.classList.toggle('selected'));
 });
 
 document.getElementById('btn-custom-confirm')?.addEventListener('click', () => {
@@ -50,14 +48,18 @@ document.getElementById('btn-custom-cancel')?.addEventListener('click', () => {
    ═══════════════════════════════════════════════════ */
 document.querySelectorAll('.os-card').forEach(card => {
   const go = () => {
-    // Önce seçili göster, sonra geç
     document.querySelectorAll('.os-card').forEach(c => c.classList.remove('selected'));
     card.classList.add('selected');
-    localStorage.setItem('selectedStyle', card.dataset.style);
-    // 350ms — kullanıcı seçimi görür
+    const style = card.dataset.style;
+    localStorage.setItem('selectedStyle', style);
+
+    // KDE Plasma varsa gerçek zamanlı tema uygula
+    ApplyKDETheme(style).catch(() => {
+      // KDE yoksa veya hata varsa sessizce geç
+    });
+
     setTimeout(() => { window.location.href = 'page2.html'; }, 350);
   };
-
   card.addEventListener('click', go);
   card.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
@@ -84,7 +86,7 @@ document.getElementById('btn-back')?.addEventListener('click', () => {
   location.href = 'page1.html';
 });
 
-/* Cloud kart seçimi */
+/* Cloud kart → QR modal */
 document.querySelectorAll('.cloud-card').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.cloud-card').forEach(b => b.classList.remove('selected'));
@@ -110,7 +112,6 @@ const cloudMeta = {
 function openQR(provider) {
   const modal = document.getElementById('qr-modal');
   if (!modal) return;
-
   modal.classList.remove('hidden');
 
   const meta  = cloudMeta[provider] || { label: provider, icon: 'fa-solid fa-cloud', color: '#fff' };
@@ -127,27 +128,17 @@ async function renderQR(provider) {
   const frame = document.getElementById('qr-frame');
   if (!frame) return;
 
-  // Spinner göster
   frame.innerHTML = '<div class="qr-spinner"></div>';
 
-  // Wails hazır değilse bekle
-  if (!window.go?.main?.App?.RcloneAuthorize) {
-    frame.innerHTML =
-      '<p style="color:#fbbf24;font-size:.72rem;padding:1rem;text-align:center">' +
-      'Uygulama yükleniyor...<br>Lütfen bekleyin.</p>';
-    setTimeout(() => renderQR(provider), 1500);
-    return;
-  }
-
   try {
-    const url = await window.go.main.App.RcloneAuthorize(provider);
+    // Wails binding'i direkt kullan — window.go kontrolü gerekmez
+    const url = await RcloneAuthorize(provider);
 
     frame.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.style.cssText = 'padding:10px;background:#fff;border-radius:12px;display:inline-block';
     frame.appendChild(wrap);
 
-    // QRCode kütüphanesi yüklü mü?
     if (typeof QRCode === 'undefined') {
       frame.innerHTML =
         '<p style="color:#f87171;font-size:.72rem;padding:1rem;text-align:center">' +
@@ -164,24 +155,25 @@ async function renderQR(provider) {
       correctLevel: QRCode.CorrectLevel.H,
     });
 
-    // URL'yi de göster (fallback)
+    // URL fallback
     const urlEl = document.createElement('p');
     urlEl.style.cssText =
-      'font-size:.6rem;color:#5c6478;margin-top:.5rem;word-break:break-all;text-align:center;max-width:200px';
+      'font-size:.6rem;color:#5c6478;margin-top:.5rem;word-break:break-all;' +
+      'text-align:center;max-width:200px';
     urlEl.textContent = url;
     frame.appendChild(urlEl);
 
   } catch (err) {
     console.error('[QR]', err);
+    const msg = String(err).includes('rclone')
+      ? 'rclone kurulu değil.<br><small>yay -S rclone</small>'
+      : String(err);
     frame.innerHTML =
-      '<p style="color:#f87171;font-size:.72rem;padding:1rem;text-align:center">' +
-      'rclone bağlantı hatası.<br>' +
-      '<small style="opacity:.6">rclone kurulu mu?</small></p>';
+      `<p style="color:#f87171;font-size:.72rem;padding:1rem;text-align:center">${msg}</p>`;
   }
 }
 
 document.getElementById('qr-close')?.addEventListener('click', closeQR);
-
 document.getElementById('qr-confirm')?.addEventListener('click', () => {
   const meta = cloudMeta[selectedCloud];
   if (elC) elC.innerHTML = meta
@@ -189,7 +181,6 @@ document.getElementById('qr-confirm')?.addEventListener('click', () => {
     : selectedCloud;
   closeQR();
 });
-
 document.getElementById('qr-modal')?.addEventListener('click', e => {
   if (e.target === document.getElementById('qr-modal')) closeQR();
 });
@@ -206,27 +197,17 @@ document.getElementById('btn-finish')?.addEventListener('click', async () => {
   const apps    = JSON.parse(localStorage.getItem('selectedApps') || '[]');
 
   const btn = document.getElementById('btn-finish');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
-  }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
 
   try {
-    await window.go.main.App.RunSetup(profile, drivers, selectedCloud, apps, 'false');
+    await RunSetup(profile, drivers, selectedCloud, apps, 'false');
     location.href = 'index.html';
   } catch (err) {
     console.error('[Setup]', err);
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-rocket"></i>';
-    }
-    // Hata mesajını göster
-    const bar = document.querySelector('.summary-bar');
-    if (bar) {
-      const errEl = document.createElement('p');
-      errEl.style.cssText = 'color:#f87171;font-size:.75rem;width:100%;text-align:center;margin-top:.5rem';
-      errEl.textContent = 'Hata: ' + err;
-      bar.after(errEl);
-    }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i>'; }
+    const errEl = document.createElement('p');
+    errEl.style.cssText = 'color:#f87171;font-size:.75rem;width:100%;text-align:center;margin-top:.5rem';
+    errEl.textContent = 'Hata: ' + err;
+    document.querySelector('.summary-bar')?.after(errEl);
   }
 });
