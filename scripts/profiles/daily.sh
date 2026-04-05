@@ -63,8 +63,10 @@ FLATPAK_APPS=(
 # ── CUPS yazıcı servisi ───────────────────────────────────────
 configure_cups() {
     log_info "CUPS yazıcı servisi etkinleştiriliyor..."
-    sudo systemctl enable --now cups >> "${LOG_FILE}" 2>&1 || true
-    log_ok "CUPS etkin."
+    # CUPS system service — sudo gerekir
+    sudo systemctl enable --now cups >> "${LOG_FILE}" 2>&1 || \
+        log_warn "CUPS etkinleştirilemedi (sudo gerekli)."
+    log_ok "CUPS hazır."
 }
 
 # ── Microsoft 365 web app kısayolu ───────────────────────────

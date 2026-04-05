@@ -33,11 +33,13 @@ AUR_PKGS=(
 # ── Docker ────────────────────────────────────────────────────
 configure_docker() {
     log_info "Docker servisi etkinleştiriliyor..."
-    sudo systemctl enable --now docker >> "${LOG_FILE}" 2>&1 || true
-    # Kullanıcıyı docker grubuna ekle (sudosuz docker)
+    # Docker system service — sudo gerekir ama yay cache'i var
+    sudo systemctl enable --now docker >> "${LOG_FILE}" 2>&1 || \
+        log_warn "Docker servisi etkinleştirilemedi (sudo gerekli)."
+    # Kullanıcıyı docker grubuna ekle — sonraki oturumdan itibaren sudosuz docker
     if ! groups "$USER" | grep -q docker; then
-        sudo usermod -aG docker "$USER"
-        log_ok "Kullanıcı docker grubuna eklendi (yeniden giriş gerekli)."
+        sudo usermod -aG docker "$USER" >> "${LOG_FILE}" 2>&1 || true
+        log_ok "docker grubuna eklendi (yeniden giriş gerekli)."
     fi
     log_ok "Docker hazır."
 }
