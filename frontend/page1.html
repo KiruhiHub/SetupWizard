@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchInit — Masaüstü</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo"><i class="fa-brands fa-linux"></i></div>
+    <div class="sidebar-steps">
+      <div class="step-node done" title="Profil"><i class="fa-solid fa-check"></i></div>
+      <div class="step-connector done"></div>
+      <div class="step-node active" title="Masaüstü"><i class="fa-solid fa-display"></i></div>
+      <div class="step-connector"></div>
+      <div class="step-node" title="Bulut"><i class="fa-solid fa-cloud"></i></div>
+    </div>
+  </aside>
+
+  <div class="content">
+
+    <div class="top-bar">
+      <button class="btn-secondary" onclick="location.href='index.html'"
+        style="width:auto;min-height:36px;padding:.5rem .9rem;font-size:.8rem;border-radius:10px">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <div class="progress-pill">
+        <div class="progress-track">
+          <div class="progress-fill" style="width:66%"></div>
+        </div>
+        <span class="progress-label">2 / 3</span>
+      </div>
+    </div>
+
+    <main class="page">
+
+      <div class="section-head up">
+        <span class="section-icon">🖥️</span>
+        <h1>Masaüstü stili</h1>
+      </div>
+
+      <div class="os-grid">
+
+        <div class="os-card up d1" data-style="windows" tabindex="0" role="button" aria-label="Windows">
+          <div class="os-mock os-win">
+            <i class="fab fa-windows os-center-icon"></i>
+            <div class="os-bar">
+              <div class="os-dot"></div><div class="os-dot"></div><div class="os-dot"></div>
+            </div>
+          </div>
+          <div class="os-foot">
+            <span class="os-foot-icon">🪟</span>
+            <div>
+              <span class="os-foot-name">Windows</span>
+              <span class="os-foot-sub">Tanıdık</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="os-card up d2" data-style="macos" tabindex="0" role="button" aria-label="macOS">
+          <div class="os-mock os-mac">
+            <div class="os-bar">
+              <div class="os-dot"></div><div class="os-dot"></div><div class="os-dot"></div>
+            </div>
+            <i class="fab fa-apple os-center-icon"></i>
+          </div>
+          <div class="os-foot">
+            <span class="os-foot-icon">🍎</span>
+            <div>
+              <span class="os-foot-name">macOS</span>
+              <span class="os-foot-sub">Sade</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="os-card up d3" data-style="kde" tabindex="0" role="button" aria-label="KDE">
+          <div class="os-mock os-kde">
+            <i class="fas fa-layer-group os-center-icon"></i>
+            <div class="os-bar">
+              <div class="os-dot"></div><div class="os-dot"></div><div class="os-dot"></div>
+            </div>
+          </div>
+          <div class="os-foot">
+            <span class="os-foot-icon">🐧</span>
+            <div>
+              <span class="os-foot-name">KDE</span>
+              <span class="os-foot-sub">Özgür</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+</div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

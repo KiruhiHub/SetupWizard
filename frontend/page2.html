@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchInit — Bulut</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <!-- QR Code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo"><i class="fa-brands fa-linux"></i></div>
+    <div class="sidebar-steps">
+      <div class="step-node done"><i class="fa-solid fa-check"></i></div>
+      <div class="step-connector done"></div>
+      <div class="step-node done"><i class="fa-solid fa-check"></i></div>
+      <div class="step-connector done"></div>
+      <div class="step-node active"><i class="fa-solid fa-cloud"></i></div>
+    </div>
+  </aside>
+
+  <div class="content">
+
+    <div class="top-bar">
+      <button class="btn-secondary" onclick="location.href='page1.html'"
+        style="width:auto;min-height:36px;padding:.5rem .9rem;font-size:.8rem;border-radius:10px">
+        <i class="fa-solid fa-arrow-left"></i>
+      </button>
+      <div class="progress-pill">
+        <div class="progress-track">
+          <div class="progress-fill" style="width:100%"></div>
+        </div>
+        <span class="progress-label">3 / 3</span>
+      </div>
+    </div>
+
+    <main class="page">
+
+      <div class="section-head up">
+        <span class="section-icon">🎉</span>
+        <h1>Son adım!</h1>
+      </div>
+
+      <!-- Cloud cards -->
+      <div class="cloud-grid">
+
+        <button class="cloud-card up d1" data-cloud="google" aria-label="Google Drive">
+          <div class="cloud-icon-wrap">
+            <i class="fa-brands fa-google" style="color:#4285f4;font-size:1.3rem"></i>
+          </div>
+          <span class="cloud-label">Google</span>
+        </button>
+
+        <button class="cloud-card up d2" data-cloud="icloud" aria-label="iCloud">
+          <div class="cloud-icon-wrap">
+            <i class="fa-brands fa-apple" style="color:#a0a0b8;font-size:1.3rem"></i>
+          </div>
+          <span class="cloud-label">iCloud</span>
+        </button>
+
+        <button class="cloud-card up d3" data-cloud="onedrive" aria-label="OneDrive">
+          <div class="cloud-icon-wrap">
+            <i class="fa-solid fa-cloud" style="color:#0078d4;font-size:1.3rem"></i>
+          </div>
+          <span class="cloud-label">OneDrive</span>
+        </button>
+
+      </div>
+
+      <button class="skip-link" id="btn-skip">
+        <i class="fa-solid fa-forward"></i> &nbsp;Atla
+      </button>
+
+      <div class="summary-bar up d4">
+        <div class="sum-chips">
+          <span class="chip hi" id="sum-profile">—</span>
+          <span class="chip"    id="sum-style">—</span>
+          <span class="chip"    id="sum-cloud">
+            <i class="fa-solid fa-cloud-slash" style="opacity:.5"></i>
+          </span>
+        </div>
+        <button class="btn-primary" id="btn-finish"
+          style="width:auto;min-height:46px;padding:.85rem 1.5rem;font-size:.9rem">
+          <i class="fa-solid fa-rocket"></i>
+        </button>
+      </div>
+
+    </main>
+  </div>
+
+</div>
+
+<!-- ── QR Modal ── -->
+<div class="modal-overlay hidden" id="qr-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="qr-modal-title">
+        <i class="fa-solid fa-qrcode"></i> &nbsp;QR ile Bağlan
+      </span>
+      <button class="modal-close" id="qr-close" aria-label="Kapat">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- QR render target -->
+    <div class="qr-frame" id="qr-frame">
+      <div class="qr-spinner" id="qr-spinner"></div>
+    </div>
+
+    <p class="qr-hint" id="qr-hint">
+      <i class="fa-solid fa-mobile-screen"></i>
+      &nbsp;Telefonunla tara
+    </p>
+
+    <button class="btn-secondary" id="qr-confirm">
+      <i class="fa-solid fa-check"></i> &nbsp;Bağlandı
+    </button>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
