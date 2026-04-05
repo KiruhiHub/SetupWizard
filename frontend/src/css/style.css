@@ -695,3 +695,13 @@ body {
   .profile-grid { grid-template-columns: 1fr; }
   .cloud-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Utility ─────────────────────────────────────────────────── */
+.hidden { display: none !important; }
+
+/* ── Log terminal satır renkleri ────────────────────────────── */
+.log-ok   { color: #34d399; }
+.log-err  { color: #f87171; }
+.log-warn { color: #fbbf24; }
+.log-sec  { color: var(--accent-hi); font-weight: 700; margin-top: .4rem; }
+.log-done { color: #34d399; font-weight: 700; }

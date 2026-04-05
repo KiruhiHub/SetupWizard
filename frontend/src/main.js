@@ -1,6 +1,6 @@
 import './css/style.css';
 
-/* ── Step 1 ─────────────────────────────────────── */
+/* ── Step 1 ─────────────────────────────────────────────────── */
 window.pick = (el) => {
   document.querySelectorAll('.pcard').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
@@ -15,7 +15,7 @@ document.getElementById('btn-next')?.addEventListener('click', () => {
   window.location.href = 'page1.html';
 });
 
-/* ── Step 2 ─────────────────────────────────────── */
+/* ── Step 2 ─────────────────────────────────────────────────── */
 document.querySelectorAll('.os-card').forEach(card => {
   const go = () => {
     document.querySelectorAll('.os-card').forEach(c => c.classList.remove('selected'));
@@ -29,7 +29,7 @@ document.querySelectorAll('.os-card').forEach(card => {
   });
 });
 
-/* ── Step 3 ─────────────────────────────────────── */
+/* ── Step 3 — Cloud seçimi ──────────────────────────────────── */
 const pLabel = { gunluk: '🏠', yazilimci: '💻', ozel: '🎛️' };
 const sLabel = { windows: '🪟', macos: '🍎', kde: '🐧' };
 
@@ -41,9 +41,14 @@ if (elP) elP.textContent = pLabel[localStorage.getItem('selectedProfile')] || '�
 if (elS) elS.textContent = sLabel[localStorage.getItem('selectedStyle')]   || '—';
 
 let selectedCloud = 'none';
-let qrRefreshTimer = null;
+let qrTimer = null;
 
-/* Cloud card click → open QR modal */
+// Geri butonu
+document.getElementById('btn-back')?.addEventListener('click', () => {
+  location.href = 'page1.html';
+});
+
+// Cloud kart seçimi → QR modal aç
 document.querySelectorAll('.cloud-card').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.cloud-card').forEach(b => b.classList.remove('selected'));
@@ -53,20 +58,14 @@ document.querySelectorAll('.cloud-card').forEach(btn => {
   });
 });
 
-/* Skip */
+// Atla
 document.getElementById('btn-skip')?.addEventListener('click', () => {
   document.querySelectorAll('.cloud-card').forEach(b => b.classList.remove('selected'));
   selectedCloud = 'none';
   if (elC) elC.innerHTML = '<i class="fa-solid fa-cloud-slash" style="opacity:.5"></i>';
 });
 
-/* ── QR Modal ────────────────────────────────────── */
-const modal      = document.getElementById('qr-modal');
-const qrFrame    = document.getElementById('qr-frame');
-const qrSpinner  = document.getElementById('qr-spinner');
-const qrHint     = document.getElementById('qr-hint');
-const qrTitle    = document.getElementById('qr-modal-title');
-
+/* ── QR Modal ───────────────────────────────────────────────── */
 const cloudMeta = {
   google:   { label: 'Google Drive', icon: 'fa-brands fa-google',  color: '#4285f4' },
   icloud:   { label: 'iCloud',       icon: 'fa-brands fa-apple',   color: '#a0a0b8' },
@@ -74,58 +73,42 @@ const cloudMeta = {
 };
 
 function openQR(provider) {
+  const modal = document.getElementById('qr-modal');
   if (!modal) return;
   modal.classList.remove('hidden');
 
   const meta = cloudMeta[provider] || { label: provider, icon: 'fa-solid fa-cloud', color: '#fff' };
-  if (qrTitle) qrTitle.innerHTML =
-    `<i class="${meta.icon}" style="color:${meta.color}"></i>&nbsp;${meta.label}`;
+  const title = document.getElementById('qr-modal-title');
+  if (title) title.innerHTML = `<i class="${meta.icon}" style="color:${meta.color}"></i>&nbsp;${meta.label}`;
 
   renderQR(provider);
-  clearInterval(qrRefreshTimer);
-  qrRefreshTimer = setInterval(() => renderQR(provider), 5 * 60 * 1000);
+  clearInterval(qrTimer);
+  qrTimer = setInterval(() => renderQR(provider), 5 * 60 * 1000);
 }
 
 async function renderQR(provider) {
-  if (!qrFrame) return;
+  const frame = document.getElementById('qr-frame');
+  if (!frame) return;
 
-  // Show spinner
-  qrFrame.innerHTML = '';
-  const spinner = document.createElement('div');
-  spinner.className = 'qr-spinner';
-  qrFrame.appendChild(spinner);
+  frame.innerHTML = '<div class="qr-spinner"></div>';
 
   try {
     const url = await window.go.main.App.RcloneAuthorize(provider);
-
-    qrFrame.innerHTML = '';
+    frame.innerHTML = '';
     const wrap = document.createElement('div');
     wrap.style.cssText = 'padding:8px;background:#fff;border-radius:10px';
-    qrFrame.appendChild(wrap);
-
+    frame.appendChild(wrap);
     new QRCode(wrap, {
-      text: url,
-      width: 176,
-      height: 176,
-      colorDark: '#0c0e14',
-      colorLight: '#ffffff',
+      text: url, width: 176, height: 176,
+      colorDark: '#0c0e14', colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.H,
     });
-
-    if (qrHint) qrHint.innerHTML =
-      '<i class="fa-solid fa-mobile-screen"></i>&nbsp;Telefonunla tara';
-
   } catch (err) {
-    qrFrame.innerHTML = '';
-    const errEl = document.createElement('p');
-    errEl.style.cssText = 'color:#f87171;font-size:.75rem;text-align:center;padding:1rem';
-    errEl.textContent = 'Bağlantı hatası';
-    qrFrame.appendChild(errEl);
+    frame.innerHTML = `<p style="color:#f87171;font-size:.75rem;padding:1rem;text-align:center">Bağlantı hatası</p>`;
     console.error('[QR]', err);
   }
 }
 
-/* Close modal */
 document.getElementById('qr-close')?.addEventListener('click', closeQR);
 document.getElementById('qr-confirm')?.addEventListener('click', () => {
   if (elC) {
@@ -138,22 +121,117 @@ document.getElementById('qr-confirm')?.addEventListener('click', () => {
 });
 
 function closeQR() {
-  clearInterval(qrRefreshTimer);
-  if (modal) modal.classList.add('hidden');
+  clearInterval(qrTimer);
+  document.getElementById('qr-modal')?.classList.add('hidden');
 }
 
-/* Close on overlay click */
-modal?.addEventListener('click', e => { if (e.target === modal) closeQR(); });
+document.getElementById('qr-modal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('qr-modal')) closeQR();
+});
 
-/* ── Launch ──────────────────────────────────────── */
-document.getElementById('btn-finish')?.addEventListener('click', async () => {
+/* ── Kurulum başlat ─────────────────────────────────────────── */
+document.getElementById('btn-finish')?.addEventListener('click', startSetup);
+
+async function startSetup() {
   const profile = localStorage.getItem('selectedProfile') || 'gunluk';
   const drivers = localStorage.getItem('driversEnabled')  || 'false';
   const apps    = JSON.parse(localStorage.getItem('selectedApps') || '[]');
-  try {
-    const r = await window.go.main.App.RunSetup(profile, drivers, selectedCloud, apps, 'false');
-    console.info('[ArchInit]', r);
-  } catch (err) {
-    console.error('[ArchInit]', err);
+
+  // Ekranı değiştir
+  document.getElementById('screen-select')?.classList.add('hidden');
+  const installScreen = document.getElementById('screen-install');
+  installScreen?.classList.remove('hidden');
+
+  const logBox    = document.getElementById('log-box');
+  const bar       = document.getElementById('install-bar');
+  const statusEl  = document.getElementById('install-status');
+  const pctEl     = document.getElementById('install-pct');
+
+  let lineCount = 0;
+  const ESTIMATED_LINES = 120; // yaklaşık toplam log satırı
+
+  // Log satırı ekle
+  function appendLog(line) {
+    if (!logBox) return;
+    lineCount++;
+
+    const div = document.createElement('div');
+
+    // Renk sınıfı
+    if (line.startsWith('[OK]'))   div.className = 'log-ok';
+    else if (line.startsWith('[ERR]') || line.startsWith('[FAIL')) div.className = 'log-err';
+    else if (line.startsWith('[!!]')) div.className = 'log-warn';
+    else if (line.startsWith('══'))  div.className = 'log-sec';
+    else if (line.startsWith('[DONE]')) div.className = 'log-done';
+
+    div.textContent = line;
+    logBox.appendChild(div);
+    logBox.scrollTop = logBox.scrollHeight;
+
+    // Progress bar güncelle
+    const pct = Math.min(Math.round((lineCount / ESTIMATED_LINES) * 95), 95);
+    if (bar)    bar.style.width = pct + '%';
+    if (pctEl)  pctEl.textContent = pct + '%';
+    if (statusEl && line.startsWith('[>>]')) {
+      statusEl.textContent = line.replace('[>>]', '').trim();
+    }
   }
+
+  // Wails event dinleyicileri
+  const { EventsOn, EventsOff } = await import('../wailsjs/runtime/runtime.js');
+
+  EventsOn('setup:log', ({ line }) => appendLog(line));
+
+  EventsOn('setup:finished', ({ success, error }) => {
+    EventsOff('setup:log');
+    EventsOff('setup:finished');
+
+    // Bar %100
+    if (bar)   bar.style.width = '100%';
+    if (pctEl) pctEl.textContent = '100%';
+
+    // Done state göster
+    const doneBox  = document.getElementById('install-done');
+    const doneIcon = document.getElementById('done-icon');
+    const doneMsg  = document.getElementById('done-msg');
+
+    if (doneBox) doneBox.classList.remove('hidden');
+
+    if (success) {
+      if (doneIcon) doneIcon.textContent = '✅';
+      if (doneMsg)  doneMsg.textContent  = 'Kurulum tamamlandı! Sistemi yeniden başlatmanız önerilir.';
+      document.getElementById('install-title').textContent = 'Tamamlandı!';
+      document.getElementById('install-icon').textContent  = '✅';
+    } else {
+      if (doneIcon) doneIcon.textContent = '⚠️';
+      if (doneMsg)  doneMsg.textContent  = `Bazı paketler kurulamadı. Log dosyasını inceleyin.\n${error || ''}`;
+      document.getElementById('install-title').textContent = 'Tamamlandı (uyarılarla)';
+      document.getElementById('install-icon').textContent  = '⚠️';
+    }
+  });
+
+  // Kurulumu başlat
+  try {
+    appendLog('[>>] Kurulum başlatılıyor...');
+    const result = await window.go.main.App.RunSetup(
+      profile, drivers, selectedCloud, apps, 'false'
+    );
+    appendLog(`[OK] ${result}`);
+  } catch (err) {
+    appendLog(`[ERR] Kurulum başlatılamadı: ${err}`);
+    console.error('[Setup]', err);
+
+    // Hata durumunda done göster
+    const doneBox  = document.getElementById('install-done');
+    const doneIcon = document.getElementById('done-icon');
+    const doneMsg  = document.getElementById('done-msg');
+    if (doneBox)  doneBox.classList.remove('hidden');
+    if (doneIcon) doneIcon.textContent = '❌';
+    if (doneMsg)  doneMsg.textContent  = `Hata: ${err}`;
+  }
+}
+
+// Done butonu
+document.getElementById('btn-done')?.addEventListener('click', () => {
+  location.href = 'index.html';
 });

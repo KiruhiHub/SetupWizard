@@ -22,19 +22,32 @@ is_installed()      { command -v "$1" &>/dev/null; }
 pkg_installed()     { pacman -Qi "$1" &>/dev/null 2>&1; }
 flatpak_installed() { flatpak list --app --columns=application 2>/dev/null | grep -qx "$1"; }
 
-# ── sudo önbelleği — tek seferlik şifre, sonra timestamp ──────
-# Wails uygulaması başlamadan önce kullanıcıdan sudo alınır.
-# Betik boyunca sudo -n ile şifresiz çalışır.
+# ── sudo kontrolü ────────────────────────────────────────────
+# Wails'den çağrılınca terminal yok — interaktif sudo çalışmaz.
+# Kullanıcı Wails UI'dan pkexec/polkit ile sudo vermiş olmalı,
+# ya da NOPASSWD sudoers ayarı olmalı.
+# Eğer sudo yoksa hata ver ve devam et (paketler başarısız olur, loglanır).
 refresh_sudo() {
     if sudo -n true 2>/dev/null; then
+        # sudo önbelleği var — arka planda yenile
+        (while true; do sudo -n true 2>/dev/null; sleep 200; done) &
+        disown
         return 0
     fi
-    log_warn "Kurulum için sudo gerekiyor. Şifrenizi girin:"
-    sudo -v || { log_error "sudo alınamadı, kurulum durduruluyor."; exit 1; }
-    # Arka planda her 4 dakikada bir sudo timestamp yenile
-    (while true; do sudo -n true; sleep 240; done) &
-    SUDO_KEEPALIVE_PID=$!
-    trap 'kill "$SUDO_KEEPALIVE_PID" 2>/dev/null' EXIT
+
+    # pkexec varsa GUI şifre penceresi aç
+    if command -v pkexec &>/dev/null; then
+        log_info "Yetki isteniyor (pkexec)..."
+        pkexec --disable-internal-agent true 2>/dev/null || true
+        if sudo -n true 2>/dev/null; then
+            (while true; do sudo -n true 2>/dev/null; sleep 200; done) &
+            disown
+            return 0
+        fi
+    fi
+
+    log_warn "sudo önbelleği bulunamadı — bazı paketler kurulamayabilir."
+    log_warn "Çözüm: terminalde 'sudo -v' çalıştırın, sonra uygulamayı açın."
 }
 
 # ── pacman ────────────────────────────────────────────────────

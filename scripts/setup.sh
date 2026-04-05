@@ -200,6 +200,16 @@ main() {
     log_section "ArchInit Başlatılıyor"
     log_info "Profil: $PROFILE | Log: $LOG_FILE"
 
+    # sudo önbelleği yoksa kullanıcıyı bilgilendir
+    if ! sudo -n true 2>/dev/null; then
+        log_error "sudo önbelleği bulunamadı!"
+        log_error "Lütfen bir terminal açın ve şunu çalıştırın:"
+        log_error "  sudo -v"
+        log_error "Ardından uygulamayı tekrar başlatın."
+        echo "[ARCHINIT:DONE:FAIL] sudo önbelleği yok"
+        exit 1
+    fi
+
     detect_hardware
     install_codecs
     run_profile
