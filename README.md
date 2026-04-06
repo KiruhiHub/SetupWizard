@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="build/appicon.png" width="88" alt="ArchInit" />
+  <img src="Ekran Görüntüsü_20260406_214607.png" width="88" alt="Kiruhi Setup" />
 
   # Kiruhi Setup
 
