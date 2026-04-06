@@ -6,7 +6,7 @@
   **Arch Linux kurulum sihirbazı**  
 </div>
 
----
+
 
 <div align="center">
 
@@ -17,7 +17,7 @@
 
 </div>
 
----
+
 
 <div align="center">
 
@@ -27,7 +27,7 @@
 
 </div>
 
----
+
 
 <div align="center">
 
