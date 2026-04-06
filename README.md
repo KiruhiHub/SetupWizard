@@ -3,7 +3,7 @@
 
   # Kiruhi Setup
 
-  **Arch Linux kurulum sihirbazı**  
+  **Arch Linux Installation Wizard**  
 </div>
 
 
